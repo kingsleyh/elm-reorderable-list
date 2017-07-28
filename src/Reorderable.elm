@@ -14,6 +14,7 @@ module Reorderable
         , ul
         , update
         , updateWithEvents
+        , tr
         )
 
 {-| This library helps you create drag and drop re-orderable html lists
@@ -206,6 +207,11 @@ your view.
 div : Config data msg -> State -> List data -> Html msg
 div ((Config { listClass }) as config) state list =
     Keyed.node "div" [ class listClass, style [ ( "position", "relative" ) ] ] <| (List.concatMap (childView Html.div config list state) list)
+
+
+tr : Config data msg -> State -> List data -> Html msg
+tr ((Config { listClass }) as config) state list =
+    Keyed.node "tr" [ class listClass, style [ ( "position", "relative" ) ] ] <| (List.concatMap (childView Html.div config list state) list)
 
 
 includeDragged : HtmlElement msg -> Config data msg -> State -> data -> List ( String, Html msg )
