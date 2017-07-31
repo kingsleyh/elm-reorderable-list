@@ -23,7 +23,7 @@ Check out the [examples][] to see how it works
 [examples]: https://github.com/rohanorton/elm-reorderable-list/tree/master/examples
 
 # View
-@docs ul, ol, div
+@docs ul, ol, div, tbody
 
 # Config
 @docs Config, HtmlWrapper, simpleConfig, fullConfig
@@ -209,6 +209,13 @@ div ((Config { listClass }) as config) state list =
     Keyed.node "div" [ class listClass, style [ ( "position", "relative" ) ] ] <| (List.concatMap (childView Html.div config list state) list)
 
 
+{-| Takes a list and turn it into an html, drag and drop re-orderable
+unordered-list. `Config` is configuration for the component, describing how the
+data should be displayed and how to handle events.
+
+**Note:** `State` and `List data` belong in your `Model`. `Config` belongs in
+your view.
+-}
 tbody : Config data msg -> State -> List data -> Html msg
 tbody ((Config { listClass }) as config) state list =
     Keyed.node "tbody" [ class listClass, style [ ( "position", "relative" ) ] ] <| (List.concatMap (childView Html.tr config list state) list)

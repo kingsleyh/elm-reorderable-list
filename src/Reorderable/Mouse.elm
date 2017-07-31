@@ -33,23 +33,73 @@ type alias MouseEvent =
     }
 
 
-mouseEvent : Int -> Int -> Int -> Int -> MouseEvent
-mouseEvent elemOffsetX elemOffsetY movementX movementY =
-    { startingPosition = Position elemOffsetX elemOffsetY
-    , movement = Position movementX movementY
+type alias Offset =
+    { offsetLeft : Int
+    , offsetTop : Int
     }
+
+
+mouseEvent : Int -> Int -> Int -> Int -> List Offset -> MouseEvent
+mouseEvent elemOffsetX elemOffsetY movementX movementY parentOffsets =
+    let
+        offsetLeft =
+            List.map .offsetLeft parentOffsets |> List.sum
+
+        offsetTop =
+            List.map .offsetTop parentOffsets |> List.sum
+    in
+        { startingPosition = Position (elemOffsetX + offsetLeft) (elemOffsetY + offsetTop)
+        , movement = Position movementX movementY
+        }
 
 
 mouseEventDecoder : Json.Decoder MouseEvent
 mouseEventDecoder =
-    Json.map4 mouseEvent
+    Json.map5 mouseEvent
         (Json.at [ "srcElement", "offsetLeft" ] Json.int)
         (Json.at [ "srcElement", "offsetTop" ] Json.int)
         (Json.field "movementX" Json.int)
         (Json.field "movementY" Json.int)
+        offsetsDecoder
+
+
+offsetsDecoder : Json.Decoder (List Offset)
+offsetsDecoder =
+    let
+        offsetDepthField : Int -> List String
+        offsetDepthField depth =
+            "srcElement" :: List.repeat depth "offsetParent"
+
+        offsetParent : Int -> Json.Decoder (Maybe Offset)
+        offsetParent depth =
+            Json.maybe (Json.at (offsetDepthField depth) offsetDecoder)
+
+        --|> Json.map (Debug.log ("offset at depth: " ++ (toString depth)))
+        go : Int -> Json.Decoder (List Offset)
+        go depth =
+            offsetParent depth
+                |> Json.andThen
+                    (\maybeOffset ->
+                        case maybeOffset of
+                            Nothing ->
+                                Json.succeed []
+
+                            Just offset ->
+                                Json.map2 (::) (Json.succeed offset) (go (depth + 1))
+                    )
+    in
+        go 0
+
+
+offsetDecoder : Json.Decoder Offset
+offsetDecoder =
+    Json.map2 Offset
+        (Json.field "offsetLeft" Json.int)
+        (Json.field "offsetTop" Json.int)
 
 
 
+--        (Json.maybe "offsetParent" (Json.succeed Nothing))
 -- MOUSE EVENTS
 
 
