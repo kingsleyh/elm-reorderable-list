@@ -14,7 +14,7 @@ module Reorderable
         , ul
         , update
         , updateWithEvents
-        , tr
+        , tbody
         )
 
 {-| This library helps you create drag and drop re-orderable html lists
@@ -209,9 +209,9 @@ div ((Config { listClass }) as config) state list =
     Keyed.node "div" [ class listClass, style [ ( "position", "relative" ) ] ] <| (List.concatMap (childView Html.div config list state) list)
 
 
-tr : Config data msg -> State -> List data -> Html msg
-tr ((Config { listClass }) as config) state list =
-    Keyed.node "tr" [ class listClass, style [ ( "position", "relative" ) ] ] <| (List.concatMap (childView Html.div config list state) list)
+tbody : Config data msg -> State -> List data -> Html msg
+tbody ((Config { listClass }) as config) state list =
+    Keyed.node "tbody" [ class listClass, style [ ( "position", "relative" ) ] ] <| (List.concatMap (childView Html.tr config list state) list)
 
 
 includeDragged : HtmlElement msg -> Config data msg -> State -> data -> List ( String, Html msg )
