@@ -244,11 +244,27 @@ childView element (Config config) list (State state) data =
         id =
             config.toId data
 
+        decorateItem : HtmlWrapper msg
+        decorateItem elem attributes children =
+            let
+                allAttributes =
+                    attributes
+                        ++ [ onDragStart state.mouseOverIgnored <| config.toMsg << InternalDragStart id
+                           , onDragOver config.updateList
+                                (\() ->
+                                    Helpers.updateList config.toId id (Maybe.map .id state.dragging) list
+                                )
+                                (state.dragging /= Nothing)
+                           , class childClass
+                           ]
+            in
+                elem allAttributes children
+
         ( childView, childClass ) =
             if isDragging then
                 ( config.placeholderView data, config.placeholderClass )
             else
-                ( config.itemView (ignoreDrag config.toMsg) data, config.itemClass )
+                ( config.itemView (ignoreDrag config.toMsg) decorateItem data, config.itemClass )
 
         isDragging =
             state.dragging
@@ -259,19 +275,7 @@ childView element (Config config) list (State state) data =
         dragged =
             includeDragged element (Config config) (State state) data
     in
-        ( id
-        , element
-            [ onDragStart state.mouseOverIgnored <| config.toMsg << InternalDragStart id
-            , onDragOver config.updateList
-                (\() ->
-                    Helpers.updateList config.toId id (Maybe.map .id state.dragging) list
-                )
-                (state.dragging /= Nothing)
-            , class childClass
-            ]
-            [ childView ]
-        )
-            :: dragged
+        ( id, childView ) :: dragged
 
 
 draggingView : HtmlElement msg -> Config data msg -> DraggedItem -> data -> ( String, Html msg )
@@ -279,21 +283,25 @@ draggingView element (Config config) draggedItem data =
     let
         { x, y } =
             draggedItem.position
+
+        decorateItem : HtmlWrapper msg
+        decorateItem elem attributes children =
+            let
+                allAttributes =
+                    attributes ++ [ style
+                                                  [ "position" => "absolute"
+                                                  , "display" => "block"
+                                                  , "left" => px x
+                                                  , "top" => px y
+                                                  , "pointer-events" => "none"
+                                                  , "cursor" => "pointer"
+                                                  ]
+                                              , class config.itemClass
+                                              ]
+            in
+                elem allAttributes children
     in
-        ( "__draggedItem"
-        , element
-            [ style
-                [ "position" => "absolute"
-                , "display" => "block"
-                , "left" => px x
-                , "top" => px y
-                , "pointer-events" => "none"
-                , "cursor" => "pointer"
-                ]
-            , class config.itemClass
-            ]
-            [ config.itemView (ignoreDrag config.toMsg) data ]
-        )
+        ( "__draggedItem" , config.itemView (ignoreDrag config.toMsg) decorateItem data)
 
 
 onDragStart : Bool -> (MouseEvent -> msg) -> Attribute msg
@@ -349,7 +357,7 @@ type Config data msg
     = Config
         { toId : data -> String
         , toMsg : Msg -> msg
-        , itemView : HtmlWrapper msg -> data -> Html msg
+        , itemView : HtmlWrapper msg -> HtmlWrapper msg -> data -> Html msg
         , placeholderView : data -> Html msg
         , listClass : String
         , itemClass : String
@@ -383,7 +391,7 @@ simpleConfig { toMsg, updateList } =
     Config
         { toId = identity
         , toMsg = toMsg
-        , itemView = always text
+        , itemView = always (always text)
         , listClass = ""
         , itemClass = ""
         , placeholderClass = ""
@@ -403,7 +411,7 @@ time.
 fullConfig :
     { toId : data -> String
     , toMsg : Msg -> msg
-    , itemView : HtmlWrapper msg -> data -> Html msg
+    , itemView : HtmlWrapper msg -> HtmlWrapper msg -> data -> Html msg
     , placeholderView : data -> Html msg
     , listClass : String
     , itemClass : String
